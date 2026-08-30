@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "luria-aido"
+version = "0.1.0"
+description = "A shared-latent cell world model over frozen single-modality encoders, with the controls that say when it is not working"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Luria"}]
+keywords = ["single-cell", "perturbation", "world-model", "virtual-cell"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3.10",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = ["numpy>=1.24", "pandas>=2.0", "torch>=2.0", "anndata>=0.10"]
+
+[project.optional-dependencies]
+encoders = ["transformers==4.50.3", "rdkit>=2023.9"]
+structure = ["biopython>=1.81"]
+dev = ["pytest>=7", "ruff>=0.4"]
+
+[tool.setuptools.packages.find]
+include = ["luria_aido*"]
+
+[tool.ruff]
+line-length = 100
