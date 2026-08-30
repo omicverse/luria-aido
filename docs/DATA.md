@@ -1,20 +1,19 @@
 # Artifacts
 
-The package ships code, not weights. Point `LURIA_AIDO_DATA` at a directory
-holding:
+The package ships code, not weights. One command gets you running:
 
-```
-artifacts/K-562-gf/
-  adapter_Aad.npy          (2176, 256)   gene anchor -> latent displacement
-  adapter_Dad.npy          (384, 256)    chemistry   -> latent displacement
-  anchor_vocab.txt         genes with a complete three-leg anchor
-  gene_vocab.txt           the union gene vocabulary
-  decoder_W.npy            (256, 5979)   latent -> standardized delta
-  z_ctrl_mean.npy          (256,)        control state
+```bash
+mkdir -p ~/.cache/luria-aido && cd ~/.cache/luria-aido
+gh release download v0.1.0 -R omicverse/luria-aido -p 'luria-aido-artifacts-*.tar.gz'
+tar xzf luria-aido-artifacts-0.1.0.tar.gz
+export LURIA_AIDO_DATA=~/.cache/luria-aido
 ```
 
-The anchor is `DNA(GENERanno 1280) ⊕ protein(ESM2 640) ⊕ expression(Geneformer 256)`;
-only genes covered by all three appear in `anchor_vocab.txt`.
+164 MB, and it includes the delivered checkpoint (3 seeds) alongside the tables.
+Verified end to end: unpack, set the variable, `Cell("K-562")` loads and both
+perturbation paths return.
+
+## Layout
 
 ## Training data
 

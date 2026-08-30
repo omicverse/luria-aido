@@ -173,8 +173,9 @@ pip install -e ".[encoders,structure]"    # frozen encoders + delegated folding
 pytest tests/                             # 5 smoke tests, no artifacts needed
 ```
 
-Weights and anchor tables are not in the repository. Point `LURIA_AIDO_DATA` at
-them — layout in [`docs/DATA.md`](docs/DATA.md). Every path is an environment
+Weights and anchor tables ship as a release asset (164 MB, includes the delivered
+checkpoint at 3 seeds). Point `LURIA_AIDO_DATA` at
+it — one command in [`docs/DATA.md`](docs/DATA.md). Every path is an environment
 variable with a default, and a test fails the build if a developer's absolute
 path survives into the package.
 

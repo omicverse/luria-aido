@@ -19,6 +19,7 @@ Readouts never mutate state (P1); perturbations compose and record lineage
 """
 from __future__ import annotations
 
+from luria_aido import config
 import pathlib
 from typing import Optional
 
@@ -225,6 +226,14 @@ class Cell:
 
 
 def _default_root() -> pathlib.Path:
+    """Artifacts root: LURIA_AIDO_DATA/artifacts, falling back to the checkout.
+
+    The fallback keeps a source checkout with a sibling `artifacts/` working;
+    everywhere else the environment variable decides.
+    """
+    env = config.data_root() / "artifacts"
+    if env.is_dir():
+        return env
     return pathlib.Path(__file__).resolve().parent.parent / "artifacts"
 
 
