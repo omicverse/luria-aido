@@ -1,104 +1,203 @@
-# luria-aido
+<h1 align="center">luria-aido</h1>
 
-A cell world model for K-562: three readout families decode from **one shared
-latent state**, so a perturbation written once is visible to every readout.
+<p align="center">
+  <em>A cell world model for K-562 — and the controls that say which parts of it work.</em>
+</p>
 
-The unusual thing about this repository is not the model. It is that every
-number ships with the control that says whether it means anything — and by that
-standard **one of the three legs works, one is weak, and one does not work at
-all.** Those verdicts are below, measured, not adjectives.
+<p align="center">
+  <img alt="python" src="https://img.shields.io/badge/python-3.10%2B-blue">
+  <img alt="license" src="https://img.shields.io/badge/license-MIT-green">
+  <img alt="status" src="https://img.shields.io/badge/status-research%20preview-orange">
+</p>
+
+---
+
+Three readout families — gene knockout, small molecule, regulatory sequence —
+decode from **one shared latent state**. Write a perturbation once and every
+readout sees it. That is the claim that separates a world model from three
+predictors behind a common `import`, and it is testable: improving one family
+must not degrade the others.
+
+It holds. Swapping F1's dataset left F2's and F3's metrics unchanged.
+
+The rest of this README is about something less comfortable. Every number here
+ships with the null that says whether it means anything, and by that standard
+**one leg is at specialist parity, one carries real but weak signal, and one
+does not work at all.**
+
+## Quickstart
 
 ```python
 from luria_aido import Cell
 
 cell = Cell("K-562")
+
 ko = cell.clone()
 ko.gene_knockout("ABL1")
-ko.get_expression()            # pd.Series over 6584 genes
+ko.get_expression()          # pd.Series over 6584 genes
+
+drug = cell.clone()
+drug.small_molecule_perturbation("CC1=C(C=C(C=C1)NC(=O)...")
+drug.get_expression()        # runs — but see "F2 does not read the molecule"
 ```
 
-## What actually works
+`examples/design_loop.py` runs the published in-context design loop end to end
+(16 steps, 0 failures).
 
-Every family is scored against two nulls — `zero` (predict no effect) and
-`shuffle` (permute the condition→target correspondence, 30 draws) — and against
-the specialist model for that task. `gap_z` is how many null-SDs the model sits
-below the shuffle null: **it is the only number that says the model is using the
-perturbation at all.**
+## Scoreboard
 
-| family | gap_z | vs specialist | verdict |
-|---|---|---|---|
-| **F3** regulatory sequence → activity | 59–71 | corr_hk 0.792 vs GENERator 0.80 | **works, at parity** |
-| **F1** gene KO → expression | 6.8–8.5 | pearson 0.246 vs GEARS 0.556 | real signal, 2× below specialist |
-| **F2** molecule → expression | 3.6–4.2 | R² 0.041 vs chemCPA 0.37 | **does not work** — see below |
+`gap_z` is how far the model sits from a **shuffle null** — permute the
+condition→target correspondence, 30 draws, measure in null-SDs. It is the only
+number that says the model is using the perturbation at all. A model *trained*
+on shuffled labels scores **0.68** (F1) and **2.65** (F2); those are the bars.
 
-Reference point for `gap_z`: a model *trained on shuffled labels* scores 0.68
-(F1) and 2.65 (F2). F1 clears that comfortably. **F2 does not clear it.**
+| family | `gap_z` | ours | specialist | verdict |
+|:--|--:|--:|--:|:--|
+| **F3** · regulatory sequence → activity | **59 – 71** | corr_hk 0.792 ± 0.003 | GENERator 0.80 | **at parity** |
+| **F1** · gene KO → expression | **6.8 – 8.5** | pearson 0.246 ± 0.003 | GEARS 0.564 | real signal, 2× below |
+| **F2** · molecule → expression | 3.6 – 4.2 | R² 0.041 ± 0.006 | chemCPA 0.37 | **does not work** |
 
-### F2 does not read the molecule
+F1 also clears both trivial floors — MSE 0.921 < train-mean 0.971 < zero 1.054.
+F2 does not clear the shuffled-label bar of 2.65.
 
-The honest version of "input any molecule, get the perturbed expression". We ran
-the published in-context design loop, took imatinib as the reference, and asked
-how many of its top-200 DE genes each molecule recovers — **with negative
-controls**, which is the part usually left out:
+> The GEARS number was produced locally with official weights on the simulation
+> split (107 test perturbations). In that same run **GEARS scored below its own
+> train-mean control** (0.564 vs 0.5786). The bar in this task is low; that is
+> the field's state, not a favourable choice of baseline.
+
+## F2 does not read the molecule
+
+The usual way to report a design loop is: generate candidates, measure how many
+of the reference drug's differentially-expressed genes they recover, publish the
+percentage. Here is that number for our model, **with negative controls** —
+which is the part that is usually missing.
+
+Reference: imatinib, top-200 DE genes.
 
 | molecule | DEG recovery | cosine to reference |
-|---|---|---|
-| glucose | **68.0%** | +0.93 |
-| urea | 64.0% | +0.91 |
-| ibuprofen | 62.0% | +0.91 |
-| scrambled SMILES | 44–51% | +0.85 |
-| **dasatinib** (a real ABL1 inhibitor) | **35.5%** | +0.79 |
+|:--|--:|--:|
+| glucose | **68.0 %** | +0.93 |
+| urea | 64.0 % | +0.91 |
+| ibuprofen | 62.0 % | +0.91 |
+| aspirin / caffeine | 53.0 % | +0.86 |
+| scrambled SMILES | 44 – 51 % | +0.85 |
+| ethanol | 41.5 % | +0.78 |
+| **dasatinib** — a real ABL1 inhibitor | **35.5 %** | +0.79 |
 
-**The ordering is inverted.** Glucose beats the kinase inhibitor. Every molecule
-correlates +0.5…+0.93 with the reference because they all predict the same
-shared stress axis. Any DEG-recovery number reported without these controls is
-uninterpretable — including, we think, published ones in the same range.
+**The ordering is inverted.** Glucose beats the kinase inhibitor; a corrupted
+SMILES string beats it too. Every molecule correlates +0.5 … +0.93 with the
+reference because they all predict the same shared stress axis.
 
-The cause is measured, not guessed: F2 has **166 unique training drugs**. F1 was
-in the same position at 137 conditions and was fixed by data alone
-(Replogle 2022, 836 conditions) — no architecture change helped. There is no
-equivalent dataset for the drug leg: L1000 has no K562 arm, Tahoe-100M's 102
-cell lines contain no K562.
+A DEG-recovery percentage without these controls carries no information. Ours
+would look publishable — one designed candidate reaches 61.5 % — and it would
+mean nothing.
 
-## What "shared latent" buys, and how it was tested
+## Why F2 fails, and why it is not an architecture problem
 
-The claim that distinguishes a world model from three predictors is that
-improving one family does not degrade the others. Swapping F1's data source
-(Norman → Replogle) left F2's gap unchanged (2.0–4.7 → 3.6–4.2) and F3's
-correlation unchanged. That is the one novel claim here and it holds.
+F1 was in exactly this position with **137** training conditions. It was fixed
+by data alone:
 
-Untested: cross-scale propagation (C2) and multi-round experiments (C3). They
-are not claimed.
+```
+F1   Norman 137 conditions  →  Replogle 836 conditions
+     gap_z 3.7 → 6.8–8.5,  clears train-mean and zero
+```
+
+Eighteen architecture variants and an 810-epoch run changed nothing measurable.
+Two-stage shared/residual decomposition, a frozen-feature probe floor,
+per-gene token decoding, a per-cell latent, anchor whitening, capacity
+scaling — all at or below baseline, several degrading F3. **The dataset swap
+was the only change that moved the metric.**
+
+F2 has **166 unique training drugs** and no equivalent dataset exists:
+
+| candidate | why it does not fit |
+|:--|:--|
+| L1000 phase 1 | 17,201 compounds, 70 cell lines, **no K562**; bulk 978-gene, different control convention |
+| Tahoe-100M | 100 M cells, 1,100 compounds, but its 102 lines are solid tumours — **no K562** |
+
+Nothing public is simultaneously K-562, single-cell, and large on the chemical
+side. That is a data gap, not a modelling gap, and it is recorded in
+[`docs/DATA.md`](docs/DATA.md) so it is not re-derived.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph frozen["frozen encoders"]
+    D["DNA · GENERanno<br/>1280"]
+    P["protein · ESM2<br/>640"]
+    G["expression · Geneformer<br/>256"]
+    C["chemistry · ECFP / MolFormer"]
+  end
+  D & P & G --> A["gene anchor<br/>2176"]
+  A --> T
+  C --> T
+  Z0["control state z₀"] --> T["transition<br/>T(z, u)"]
+  T --> ZP["shared latent z′"]
+  ZP --> E["expression decoder"]
+  ZP --> R["regulatory head"]
+  ZP --> S["→ delegated:<br/>ESMFold / Boltz-2 / Protenix"]
+```
+
+Encoders are frozen and declared as dependencies — they are not redistributed.
+The trained part is the integration: projections, the transition operator, and
+the per-modality decoders. All readouts decode from the same `z′`; no family
+keeps a private branch. That constraint is what makes criterion ① falsifiable.
+
+## API
+
+| write | |
+|:--|:--|
+| `clone()` | real copy of state; perturbations compose |
+| `gene_knockout(gene)` · `gene_overexpression(gene)` | |
+| `small_molecule_perturbation(smiles)` | |
+
+| read | |
+|:--|:--|
+| `get_expression()` | `pd.Series` over 6584 genes |
+| `get_regulatory_activity(sequence)` | the leg at specialist parity |
+| `get_protein_structure(target, molecule=None)` | `delegated:` ESMFold / Boltz-2 / Protenix |
+| `get_protein_ligand_interactions(molecule, target=None)` | `delegated:` |
+| `get_cell_age()` · `state` · `history` | |
+| `design_molecule_for_target(target)` | `delegated:` WarmMolGenOne — returns a provenance dict, unwrap `["value"][0]["smiles"]` |
+
+Readouts that are not implemented **raise** rather than approximate. An
+approximation under a real method's name is a different method reporting that
+method's number.
 
 ## Install
 
 ```bash
-pip install -e .            # core: Cell, expression readout
-pip install -e ".[encoders,structure]"   # frozen encoders + delegated folding
+pip install -e .                          # core: Cell, expression, regulatory
+pip install -e ".[encoders,structure]"    # frozen encoders + delegated folding
+pytest tests/                             # 5 smoke tests, no artifacts needed
 ```
 
-Artifacts (anchor tables, adapters, gene vocabularies) are not in the repo. Point
-`LURIA_AIDO_DATA` at them; see `docs/DATA.md`.
+Weights and anchor tables are not in the repository. Point `LURIA_AIDO_DATA` at
+them — layout in [`docs/DATA.md`](docs/DATA.md). Every path is an environment
+variable with a default, and a test fails the build if a developer's absolute
+path survives into the package.
 
-## Layout
+On a shared GPU, availability is decided by a **real allocation**:
+`torch.cuda.is_available()` returns `True` on a device that will refuse you a
+context.
 
-```
-luria_aido/          the package
-  config.py          every path is an env var with a default
-  cell.py            Cell: clone / perturb / read
-  engine/            encoders, bridge, decoders, state
-examples/            the published design loop, verified to run end to end
-docs/ARCHITECTURE.md what is trained vs frozen, and why
-docs/EVALUATION.md   the controls, and how to re-run them
-MODEL_CARD.md        per-family numbers, floors, and limits
-```
+## Known limits
 
-## Delegation
+Full list in [`MODEL_CARD.md`](MODEL_CARD.md). The ones that change how you
+should use it:
 
-`get_protein_structure` and `get_protein_ligand_interactions` call out to
-ESMFold / Boltz-2 / Protenix. They return `source: "delegated:<who>"`. The
-expression path is self-contained.
+1. **F2 must not be used for anything that depends on which molecule was given.**
+2. **F3 depends on an `f3_init` warm start.** Without it, correlation is
+   0.15–0.40 and degrades further under joint training.
+3. **The DNA leg of the anchor is near-constant** (pairwise cosine 0.995). The
+   three legs are structurally present but carry very unequal information — this
+   is why the perturbation atlas has effective rank 1.95.
+4. **Cross-scale propagation and multi-round experiments are untested.** They
+   are also not claimed.
+5. **No wet-lab validation of any prediction.**
 
-Readouts that are not implemented raise rather than approximate. An
-approximation under a real method's name is a different method reporting that
-method's number.
+## License
+
+MIT. Frozen encoders and delegated tools carry their own licenses and are not
+redistributed here.
