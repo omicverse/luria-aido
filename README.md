@@ -140,6 +140,19 @@ can be scored two ways in a single call — by physics (AutoDock Vina against th
 ESMFold ABL1 structure) and by the learned transcriptional arm. The two rulers
 do not agree, and only one of them is right.
 
+![design campaign](docs/img/design_campaign.png)
+
+Eight molecules, four readouts, one shared state. Row 2 is the docked pose —
+ABL1 backbone in grey, pocket residues within 5 Å in blue, ligand in orange,
+one camera for all eight. Row 3 is the transcriptional prediction. Row 4 puts
+the two rulers side by side, and they point opposite ways: LURIA-2 scores
+second-best on affinity (−8.08) and worst on transcriptional similarity
+(−0.80); glucose does the reverse (−3.99, +0.77).
+
+The `get_cell_age` row from the published figure is absent because the readout
+raises: K-562 is an immortal line with no donor age, and no transcriptomic
+clock is valid for it.
+
 **Docking — clean separation, chemically ordered:**
 
 | molecule | class | Vina kcal/mol |
