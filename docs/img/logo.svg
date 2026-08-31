@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 132 128" width="132" height="128" role="img" aria-label="luria-aido">
+  <title>luria-aido</title>
+  <!-- One state, read many ways. Three readouts sit behind as crescents; the
+       front disc is the state itself, and the core is the only filled mark.
+       Drawn as arcs rather than stacked filled circles so the mark needs no
+       opaque background — it sits on GitHub's light and dark themes alike. -->
+  <g fill="none" stroke="#4C9A8A" stroke-width="3.2" stroke-linecap="round">
+    <path d="M40 30 A34 34 0 0 0 40 98" opacity=".34"/>
+    <path d="M52 30 A34 34 0 0 0 52 98" opacity=".52"/>
+    <path d="M64 30 A34 34 0 0 0 64 98" opacity=".72"/>
+    <circle cx="78" cy="64" r="34"/>
+  </g>
+  <circle cx="78" cy="64" r="9.5" fill="#E4674F"/>
+</svg>
