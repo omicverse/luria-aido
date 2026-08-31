@@ -42,10 +42,7 @@ import pathlib
 import numpy as np
 
 _WS = pathlib.Path(__file__).resolve().parent.parent
-_BRIDGE_DEFAULT = (
-    _WS / "outputs" / "51a03013-26bb-4d55-b93b-d343883bc800" / "engine"
-    / "bridge_proteins.parquet"
-)
+_BRIDGE_DEFAULT = str(config.data_root() / "artifacts" / "bridge_proteins.parquet")
 _HF_SNAPSHOTS = [
     pathlib.Path(
         config.hf_home() + "/hub"
@@ -451,7 +448,7 @@ def _warm_molgen():
     _tools = str(_WS / "tools")
     if _tools not in _sys.path:
         _sys.path.insert(0, _tools)
-    import hf_shim  # noqa: F401  wandb/masking_utils shims, must precede load
+    from luria_aido import hf_shim  # noqa: F401  wandb/masking_utils shims, must precede load
     from luria_aido.gpu import cuda_alloc_ok, ensure_mps_env
     ensure_mps_env()
     import torch
