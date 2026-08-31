@@ -93,6 +93,7 @@ labels scores 0.68 (F1) and 2.65 (F2).
 | **F3** · regulatory sequence → activity | **59 – 71** | corr_hk 0.792 ± 0.003 | GENERator 0.80 | **at parity** |
 | **F1** · gene KO → expression | **6.8 – 8.5** | pearson 0.246 ± 0.003 | GEARS 0.564 | real signal, 2× below |
 | **F2** · molecule → expression | 3.6 – 4.2 | R² 0.041 ± 0.006 | chemCPA 0.37 | **does not work** |
+| **docking** · molecule → ABL1 affinity | — | 4.98 kcal/mol separation | delegated to Vina | works, and is not ours |
 
 F1 clears both trivial floors (MSE 0.921 < train-mean 0.971 < zero 1.054). F2
 does not clear the shuffled-label bar of 2.65.
@@ -131,6 +132,58 @@ reference because all of them predict the same shared stress axis.
 
 Our own best designed candidate reaches 61.5 %. Reported alone, that number
 would look publishable. It means nothing.
+
+## Two rulers on the same molecules, disagreeing
+
+Every readout above decodes from one shared state. So the same eight molecules
+can be scored two ways in a single call — by physics (AutoDock Vina against the
+ESMFold ABL1 structure) and by the learned transcriptional arm. The two rulers
+do not agree, and only one of them is right.
+
+**Docking — clean separation, chemically ordered:**
+
+| molecule | class | Vina kcal/mol |
+|:--|:--|--:|
+| imatinib | kinase inhibitor | **−8.77** |
+| LURIA-2 | designed | −8.08 |
+| nilotinib | kinase inhibitor | −7.99 |
+| dasatinib | kinase inhibitor | −7.35 |
+| LURIA-3 | designed | −6.26 |
+| glucose | control | −3.99 |
+| urea | control | −2.80 |
+| ethanol | control | −2.37 |
+
+Kinase inhibitors mean **−8.04**, unrelated controls **−3.06**, separation
+**4.98 kcal/mol with no overlap** — roughly four orders of magnitude in
+affinity. One designed molecule (LURIA-2, −8.08) places ahead of nilotinib.
+
+**Transcription — separation is inverted.** Cosine to imatinib's predicted
+response, after removing the shared axis that accounts for 88% of every
+molecule's prediction:
+
+| | raw cosine | centred |
+|:--|--:|--:|
+| kinase inhibitors (mean) | 0.797 | **−0.272** |
+| unrelated controls (mean) | 0.881 | **+0.418** |
+| separation | −0.084 | **−0.690** |
+
+Glucose sits at +0.591 centred; dasatinib at −0.609. The only molecule that
+lands where chemistry says it should is nilotinib (+0.467) — an imatinib
+analogue with nearly the same scaffold. **The transcriptional arm is ranking
+chemical similarity, not target engagement**, which is the one thing a
+phenotypic design platform must not do.
+
+```
+                        physics (Vina)     learned arm (F2)
+kinase inhibitors         −8.04 kcal/mol        −0.272
+unrelated controls        −3.06 kcal/mol        +0.418
+separation                +4.98, no overlap     −0.690, reversed
+```
+
+Same package, same molecules, same call. **The delegated readout distinguishes
+molecules; the trained one does not.** That contrast is more informative than
+either number alone, and it says where the work is: F2 needs data that carries
+molecular identity, not a better architecture.
 
 ## The perturbation atlas, and what a projection can hide
 
@@ -210,7 +263,7 @@ operator, decoders. Encoders are dependencies.
 | `clone()` | real copy; perturbations compose | `get_expression()` | Series over 6584 genes |
 | `gene_knockout(g)` | | `get_regulatory_activity(seq)` | the leg at parity |
 | `gene_overexpression(g)` | ⚠ see below | `get_protein_structure(t, mol)` | `delegated:` |
-| `small_molecule_perturbation(smiles)` | | `get_protein_ligand_interactions(mol)` | `delegated:` |
+| `small_molecule_perturbation(smiles)` | | `get_protein_ligand_interactions(mol)` | `delegated:` Vina — **the only readout that separates molecules** |
 | | | `design_molecule_for_target(t)` | `delegated:`; unwrap `["value"][0]["smiles"]` |
 
 ⚠ **The model does not distinguish knockout from knockdown from
