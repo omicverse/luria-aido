@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/img/logo.svg" alt="" width="104">
+</p>
+
 <h1 align="center">luria-aido</h1>
 
 <p align="center"><em>A cell world model for K-562 — built to be checked, and reporting what the checks say.</em></p>
