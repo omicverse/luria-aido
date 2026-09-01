@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/img/logo.svg" alt="" width="104">
+  <img src="docs/img/banner.webp" alt="">
 </p>
 
 <h1 align="center">luria-aido</h1>
